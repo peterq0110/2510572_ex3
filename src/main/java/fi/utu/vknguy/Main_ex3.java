@@ -4,91 +4,150 @@ public class Main_ex3 {
 
     public static final int MAX_REQUESTS = 16;
 
-    public static void main(String[] args) {
+
+    // CPU
+
+    public static void cpu(
+            Cache cache,
+            Request[] requests) {
+
+        if (requests.length > MAX_REQUESTS) {
+            throw new IllegalArgumentException(
+                    "max 16 memory requests"
+            );
+        }
+
+        for (Request request : requests) {
+
+            cache.access(
+                    request.write,
+                    request.address,
+                    request.dataOut
+            );
+        }
+    }
+
+
+    // Tests
+
+    public static void runTests() {
 
         DRAM dram = new DRAM();
 
-        // Direct mapped cache
-        Cache cache = new Cache(dram, 1, false);
+        Cache cache = new Cache(
+                dram,
+                1,
+                false
+        );
+
+
+        // Read miss, then read hit
 
         AccessResult result;
 
-
-        // --------------------------------------------------------
-        // Read miss, then read hit
-        // --------------------------------------------------------
-
-        result = cache.access(0, 0x34, null);
+        result = cache.access(
+                0,
+                0x34,
+                null
+        );
 
         assert !result.hit;
         assert result.data == 52;
 
 
-        result = cache.access(0, 0x34, null);
+        result = cache.access(
+                0,
+                0x34,
+                null
+        );
 
         assert result.hit;
         assert result.data == 52;
 
 
-        // --------------------------------------------------------
         // Write hit updates cache and DRAM
-        // --------------------------------------------------------
 
-        result = cache.access(1, 0x34, 99);
+        result = cache.access(
+                1,
+                0x34,
+                99
+        );
 
         assert result.hit;
         assert result.data == null;
 
-        assert dram.access(0, 0x34, null) == 99;
+        assert dram.access(
+                0,
+                0x34,
+                null
+        ) == 99;
 
 
-        result = cache.access(0, 0x34, null);
+        result = cache.access(
+                0,
+                0x34,
+                null
+        );
 
         assert result.hit;
         assert result.data == 99;
 
 
-        // --------------------------------------------------------
         // 0x24 and 0x34 have the same index
-        // --------------------------------------------------------
 
-        result = cache.access(0, 0x24, null);
+        result = cache.access(
+                0,
+                0x24,
+                null
+        );
 
         assert !result.hit;
         assert result.data == 36;
 
 
-        result = cache.access(0, 0x34, null);
+        result = cache.access(
+                0,
+                0x34,
+                null
+        );
 
         assert !result.hit;
         assert result.data == 99;
 
 
-        // --------------------------------------------------------
         // Write miss
-        // --------------------------------------------------------
 
-        result = cache.access(1, 0x18, 77);
+        result = cache.access(
+                1,
+                0x18,
+                77
+        );
 
         assert !result.hit;
         assert result.data == null;
 
 
-        result = cache.access(0, 0x18, null);
+        result = cache.access(
+                0,
+                0x18,
+                null
+        );
 
         assert !result.hit;
         assert result.data == 77;
 
 
-        result = cache.access(0, 0x18, null);
+        result = cache.access(
+                0,
+                0x18,
+                null
+        );
 
         assert result.hit;
         assert result.data == 77;
 
 
-        // --------------------------------------------------------
         // First and last addresses
-        // --------------------------------------------------------
 
         int[] addresses = {
                 0, 15, 16, 63
@@ -111,15 +170,16 @@ public class Main_ex3 {
         }
 
 
-        // --------------------------------------------------------
         // Bad requests
-        // --------------------------------------------------------
 
         Request[] badRequests = {
 
                 new Request(0, -1, null),
+
                 new Request(0, 64, null),
+
                 new Request(2, 0, null),
+
                 new Request(1, 0, 256)
         };
 
@@ -141,20 +201,19 @@ public class Main_ex3 {
                 rejected = true;
             }
 
-            assert rejected :
-                    "bad request was accepted";
+            assert rejected
+                    : "bad request was accepted";
         }
 
 
-        // --------------------------------------------------------
         // More than 16 requests
-        // --------------------------------------------------------
 
         boolean rejected = false;
 
         try {
 
-            Request[] tooMany = new Request[17];
+            Request[] tooMany =
+                    new Request[17];
 
             for (int i = 0; i < 17; i++) {
 
@@ -173,38 +232,159 @@ public class Main_ex3 {
             rejected = true;
         }
 
-        assert rejected :
-                "more than 16 requests were accepted";
+        assert rejected
+                : "more than 16 requests were accepted";
+
+
+        // LRU with 2 ways
+
+        Cache lru = new Cache(
+                new DRAM(),
+                2,
+                false
+        );
+
+        int[] lruAddresses = {
+                0, 8, 0, 16, 0, 8
+        };
+
+        boolean[] results =
+                new boolean[6];
+
+
+        for (int i = 0;
+             i < lruAddresses.length;
+             i++) {
+
+            result = lru.access(
+                    0,
+                    lruAddresses[i],
+                    null
+            );
+
+            results[i] = result.hit;
+        }
+
+
+        boolean[] expected = {
+                false,
+                false,
+                true,
+                false,
+                true,
+                false
+        };
+
+
+        for (int i = 0;
+             i < results.length;
+             i++) {
+
+            assert results[i]
+                    == expected[i];
+        }
+
+
+        // Check tags
+        int[] tags =
+                lru.getTagStore(0);
+
+        assert tags[0] == 0;
+        assert tags[1] == 1;
+
+
+        // Check valid bits
+        boolean[] valid =
+                lru.getValid(0);
+
+        assert valid[0];
+        assert valid[1];
 
 
         System.out.println(
-                "Self-check passed!"
+                "Self-check passed: reads, writes, "
+                        + "eviction, LRU and input limits"
         );
     }
 
 
-    // ============================================================
-    // CPU
-    // ============================================================
+    // MAIN
 
-    public static void cpu(
-            Cache cache,
-            Request[] requests) {
+    static void main(String[] args) {
+        // Task 3: direct mapped cache
 
-        if (requests.length > MAX_REQUESTS) {
-            throw new IllegalArgumentException(
-                    "max 16 memory requests"
-            );
-        }
+        Request[] requests = {
 
-        for (Request request : requests) {
+                new Request(
+                        0, 0x34, null
+                ),
 
-            cache.access(
-                    request.write,
-                    request.address,
-                    request.dataOut
-            );
-        }
+                new Request(
+                        0, 0x34, null
+                ),
+
+                new Request(
+                        1, 0x34, 99
+                ),
+
+                new Request(
+                        0, 0x34, null
+                ),
+
+                new Request(
+                        0, 0x24, null
+                ),
+
+                new Request(
+                        0, 0x34, null
+                ),
+
+                new Request(
+                        1, 0x18, 77
+                ),
+
+                new Request(
+                        0, 0x18, null
+                ),
+
+                new Request(
+                        0, 0x18, null
+                ),
+
+                new Request(
+                        0, 0x08, null
+                ),
+
+                new Request(
+                        0, 0x18, null
+                ),
+
+                new Request(
+                        0, 0x00, null
+                ),
+
+                new Request(
+                        1, 0x00, 11
+                ),
+
+                new Request(
+                        0, 0x00, null
+                ),
+
+                new Request(
+                        0, 0x10, null
+                ),
+
+                new Request(
+                        0, 0x00, null
+                )
+        };
+
+
+        cpu(
+                new Cache(new DRAM()),
+                requests
+        );
     }
 }
 

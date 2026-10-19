@@ -29,11 +29,6 @@ public class Cache {
     }
 
 
-    public Cache(DRAM dram, int ways) {
-        this(dram, ways, true);
-    }
-
-
     public Cache(DRAM dram, int ways, boolean show) {
 
         if (ways != 1 && ways != 2) {
@@ -60,14 +55,9 @@ public class Cache {
     }
 
 
-    // ------------------------------------------------------------
     // Check request
-    // ------------------------------------------------------------
 
-    public void checkRequest(
-            int write,
-            int address,
-            Integer dataOut) {
+    public void checkRequest(int write, int address, Integer dataOut) {
 
         if (write != 0 && write != 1) {
             throw new IllegalArgumentException(
@@ -94,10 +84,7 @@ public class Cache {
         }
     }
 
-
-    // ------------------------------------------------------------
     // Find matching way
-    // ------------------------------------------------------------
 
     public int findWay(int index, int tag) {
 
@@ -114,9 +101,7 @@ public class Cache {
     }
 
 
-    // ------------------------------------------------------------
     // Choose a way
-    // ------------------------------------------------------------
 
     public int chooseWay(int index) {
 
@@ -146,9 +131,7 @@ public class Cache {
     }
 
 
-    // ------------------------------------------------------------
     // Cache access
-    // ------------------------------------------------------------
 
     public AccessResult access(
             int write,
@@ -170,9 +153,7 @@ public class Cache {
         Integer dataIn = null;
 
 
-        // ========================================================
-        // WRITE
-        // ========================================================
+        // Write
 
         if (write == 1) {
 
@@ -193,9 +174,7 @@ public class Cache {
         }
 
 
-        // ========================================================
         // READ
-        // ========================================================
 
         else {
 
@@ -220,16 +199,14 @@ public class Cache {
         }
 
 
-        // ========================================================
         // Print
-        // ========================================================
 
         if (show) {
 
             String status;
 
             if (hit) {
-                status = "HIT ";
+                status = "HIT";
             } else {
                 status = "MISS";
             }
